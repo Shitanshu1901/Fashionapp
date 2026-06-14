@@ -14,16 +14,30 @@
     },
     "ios": {
       "supportsTablet": true
+  "bundleIdentifier": "com.shitanshu.outfitstyling"
     },
     "android": {
+      "package": "com.shitanshu.outfitstyling",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#FAF6F0"
       },
-      "edgeToEdgeEnabled": true
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Outfit Styling to access your location for weather-based styling tips."
+        }
+      ],
+      "expo-document-picker"
+    ]
   }
 }
