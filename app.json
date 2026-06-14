@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "fashion-app",
+    "name": "Outfit Styling",
     "slug": "fashion-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,6 @@
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/Main.png",
       "resizeMode": "contain",
       "backgroundColor": "#FAF6F0"
     },
