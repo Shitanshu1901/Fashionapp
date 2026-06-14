@@ -4,7 +4,7 @@
     "slug": "fashion-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/Icon1.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -20,7 +20,7 @@
       "package": "com.shitanshu.outfitstyling",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/adaptive-Icon1.png",
         "backgroundColor": "#FAF6F0"
       },
       "permissions": [
