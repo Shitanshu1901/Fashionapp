@@ -20,7 +20,7 @@
       "package": "com.shitanshu.outfitstyling",
       "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-Icon1.png",
+        "foregroundImage": "./assets/Icon1.png",
         "backgroundColor": "#FAF6F0"
       },
       "permissions": [
