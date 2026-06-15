@@ -315,8 +315,4 @@ export const readFileAsString = async (uri) => {
     console.error('readFileAsString failed:', e);
     return null;
   }
-};git add utils/storage.js
-git commit -m "Fix storage.js - static FileSystem import for production APK"
-git pull origin main --rebase
-git push origin main --force
-eas build --platform android --profile preview --non-interactive
+}
