@@ -69,7 +69,10 @@ export default function TravelCapsuleScreen({ userGender }) {
   }, []);
 
   const generate = async () => {
+  try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  } catch (_) {}
+  
     const result = buildCapsule(wardrobe, userGender, selectedOccasion, days, wornIds);
     if (!result) {
       Alert.alert('Not Enough Items', `Add more ${selectedOccasion} clothes to generate a travel capsule.`);

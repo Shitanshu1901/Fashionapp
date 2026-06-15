@@ -37,7 +37,8 @@
           "locationWhenInUsePermission": "Allow Outfit Styling to access your location for weather-based styling tips."
         }
       ],
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-image-picker"
     ],
     "extra": {
       "eas": {

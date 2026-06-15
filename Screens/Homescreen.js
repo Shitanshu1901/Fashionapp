@@ -101,8 +101,11 @@ const fetchWeather = async () => {
 
   // ── Outfit generation (haptics + laundry filter) ─────
   const generateOutfit = async () => {
+  try {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setOutfitSaved(false);
+  } catch (_) {}
+
+  setOutfitSaved(false);
 
     const slots = OUTFIT_SLOTS[userGender] || OUTFIT_SLOTS.Men;
     // Exclude archived AND currently worn items

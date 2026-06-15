@@ -56,10 +56,21 @@ export default function SettingsScreen({ userName, userGender, onResetProfile })
   }, 0);
 
   // ── Export ────────────────────────────────────────────
-  const handleExport = async () => {
-    setIsExporting(true);
+const handleExport = async () => {
+  setIsExporting(true);
+
+  try {
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (_) {}
+
+    // export logic here
+  } catch (error) {
+    console.error(error);
+  } finally {
+    setIsExporting(false);
+  }
+};
 
       // 1. Serialise all wardrobe data (images as base64)
       const json = await exportAllData();
