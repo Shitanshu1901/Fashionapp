@@ -3,15 +3,13 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   SafeAreaView, Platform, StatusBar, Alert, ActivityIndicator,
 } from 'react-native';
-import * as Haptics         from 'expo-haptics';
-import * as Sharing         from 'expo-sharing';
-import * as DocumentPicker  from 'expo-document-picker';
-// ← expo-file-system is NOT imported here anymore.
-//   All file operations go through storage.js which has the safe guard.
+import * as Haptics        from 'expo-haptics';
+import * as Sharing        from 'expo-sharing';
+import * as DocumentPicker from 'expo-document-picker';
 import {
   getWardrobe, getOutfitHistory,
   exportAllData, importAllData,
-  saveExportFile, readFileAsString,   // ← the two new helpers
+  saveExportFile, readFileAsString,
   COOLDOWN_DAYS, getActiveWornItemIds,
 } from '../utils/storage';
 import { ANALYTICS_CATEGORIES, OUTFIT_SLOTS } from '../utils/StyleRules';
@@ -20,11 +18,11 @@ const OCCASIONS = ['Casual', 'Office', 'Party', 'Gym'];
 const EMOJIS    = { Casual: '☕', Office: '💼', Party: '🎉', Gym: '🏋️' };
 
 export default function SettingsScreen({ userName, userGender, onResetProfile }) {
-  const [wardrobe,     setWardrobe]     = useState([]);
-  const [history,      setHistory]      = useState([]);
-  const [wornCount,    setWornCount]    = useState(0);
-  const [isExporting,  setIsExporting]  = useState(false);
-  const [isImporting,  setIsImporting]  = useState(false);
+  const [wardrobe,    setWardrobe]    = useState([]);
+  const [history,     setHistory]     = useState([]);
+  const [wornCount,   setWornCount]   = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -41,13 +39,15 @@ export default function SettingsScreen({ userName, userGender, onResetProfile })
   const analyticsCats = ANALYTICS_CATEGORIES[userGender] || ANALYTICS_CATEGORIES.Men;
   const slots         = OUTFIT_SLOTS[userGender]          || OUTFIT_SLOTS.Men;
 
-  const count     = (occ, cat) =>
+  const count = (occ, cat) =>
     wardrobe.filter(i => i.occasion === occ && i.category === cat && !i.archived).length;
+
   const slotCount = (occ, cats) =>
     cats.reduce((s, c) => s + count(occ, c), 0);
 
   const totalItems      = wardrobe.filter(i => !i.archived).length;
   const archivedCount   = wardrobe.filter(i =>  i.archived).length;
+
   const possibleOutfits = OCCASIONS.reduce((acc, occ) => {
     const t = slotCount(occ, slots.top);
     const b = slotCount(occ, slots.bottom);
@@ -56,37 +56,23 @@ export default function SettingsScreen({ userName, userGender, onResetProfile })
   }, 0);
 
   // ── Export ────────────────────────────────────────────
-const handleExport = async () => {
-  setIsExporting(true);
-
-  try {
+  const handleExport = async () => {
+    setIsExporting(true);
     try {
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (_) {}
+      try { await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch (_) {}
 
-    // export logic here
-  } catch (error) {
-    console.error(error);
-  } finally {
-    setIsExporting(false);
-  }
-};
-
-      // 1. Serialise all wardrobe data (images as base64)
       const json = await exportAllData();
       if (!json) {
         Alert.alert('Export Failed', 'Could not generate backup data.');
         return;
       }
 
-      // 2. Write to a file via storage.js (no FileSystem import needed here)
       const filePath = await saveExportFile(json);
       if (!filePath) {
-        Alert.alert('Export Failed', 'Could not write the backup file to device.');
+        Alert.alert('Export Failed', 'Could not write backup file to device.');
         return;
       }
 
-      // 3. Share via native share sheet (Google Drive, WhatsApp, email, etc.)
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
         await Sharing.shareAsync(filePath, {
@@ -94,7 +80,7 @@ const handleExport = async () => {
           dialogTitle: 'Save your wardrobe backup',
         });
       } else {
-        Alert.alert('Backup Saved', 'File saved to app storage. Sharing is unavailable on this device.');
+        Alert.alert('Backup Saved', 'File saved to app storage.');
       }
     } catch (e) {
       Alert.alert('Export Failed', 'Something went wrong. Please try again.');
@@ -123,7 +109,6 @@ const handleExport = async () => {
             onPress: async () => {
               setIsImporting(true);
               try {
-                // Read the file via storage.js helper
                 const json = await readFileAsString(result.assets[0].uri);
                 if (!json) {
                   Alert.alert('Restore Failed', 'Could not read the backup file.');
@@ -132,10 +117,14 @@ const handleExport = async () => {
                 const success = await importAllData(json);
                 if (success) {
                   await loadData();
-                  await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  Alert.alert('Restored! ✓', 'Your wardrobe has been fully restored from backup.');
+                  try {
+                    await Haptics.notificationAsync(
+                      Haptics.NotificationFeedbackType.Success
+                    );
+                  } catch (_) {}
+                  Alert.alert('Restored! ✓', 'Your wardrobe has been fully restored.');
                 } else {
-                  Alert.alert('Restore Failed', 'Invalid or corrupted backup file. Make sure you selected an OutfitStyling backup.');
+                  Alert.alert('Restore Failed', 'Invalid or corrupted backup file.');
                 }
               } catch (_) {
                 Alert.alert('Restore Failed', 'An unexpected error occurred.');
@@ -157,7 +146,10 @@ const handleExport = async () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.inner} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.inner}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.header}>Settings</Text>
 
         {/* ── Profile ── */}
@@ -230,9 +222,17 @@ const handleExport = async () => {
                 {analyticsCats.map(cat => {
                   const c = count(occ, cat);
                   return (
-                    <View key={cat} style={[styles.catChip, c === 0 && styles.catChipEmpty]}>
-                      <Text style={[styles.catNum, c === 0 && { color: '#E74C3C' }]}>{c}</Text>
-                      <Text style={[styles.catLbl, c === 0 && { color: '#E74C3C' }]} numberOfLines={1}>
+                    <View
+                      key={cat}
+                      style={[styles.catChip, c === 0 && styles.catChipEmpty]}
+                    >
+                      <Text style={[styles.catNum, c === 0 && { color: '#E74C3C' }]}>
+                        {c}
+                      </Text>
+                      <Text
+                        style={[styles.catLbl, c === 0 && { color: '#E74C3C' }]}
+                        numberOfLines={1}
+                      >
                         {cat}
                       </Text>
                     </View>
@@ -252,7 +252,9 @@ const handleExport = async () => {
             </View>
             <View style={[styles.profileRow, { borderBottomWidth: 0 }]}>
               <Text style={styles.profileGender}>Favourited outfits</Text>
-              <Text style={styles.profileName}>{history.filter(h => h.favorited).length}</Text>
+              <Text style={styles.profileName}>
+                {history.filter(h => h.favorited).length}
+              </Text>
             </View>
           </View>
         )}
@@ -262,7 +264,7 @@ const handleExport = async () => {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Backup & Restore</Text>
           <Text style={styles.cardSubtext}>
-            Backup includes your full wardrobe (with photos), outfit history, and profile.
+            Backup includes your full wardrobe with photos, outfit history, and profile.
             Share to Google Drive, WhatsApp, or email to keep it safe.
           </Text>
 
@@ -316,7 +318,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 15 : 15,
   },
-  header: { fontSize: 38, fontFamily: 'FashionCalligraphy', color: '#1A1A1A', marginBottom: 24 },
+  header: {
+    fontSize: 38, fontFamily: 'FashionCalligraphy',
+    color: '#1A1A1A', marginBottom: 24,
+  },
   sectionHeader: {
     fontSize: 10, fontWeight: '700', letterSpacing: 2,
     color: '#8A7E72', marginBottom: 12, marginTop: 8,
@@ -327,18 +332,19 @@ const styles = StyleSheet.create({
   cardSubtext: { fontSize: 12, color: '#8A7E72', lineHeight: 18, marginBottom: 16 },
 
   profileRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F2EDE8',
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: '#F2EDE8',
   },
   profileName:   { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
   profileGender: { fontSize: 13, color: '#8A7E72' },
   editBtn:       { backgroundColor: '#EFEAE2', borderRadius: 16, paddingVertical: 6, paddingHorizontal: 14 },
   editBtnText:   { fontSize: 13, fontWeight: '700', color: '#1A1A1A' },
 
-  statsRow: { flexDirection: 'row', marginBottom: 12 },
-  statCard: { flex: 1, borderRadius: 16, padding: 12, alignItems: 'center', marginHorizontal: 3 },
-  statNum:  { fontSize: 24, fontWeight: '800', marginBottom: 2 },
-  statLabel:{ fontSize: 7, letterSpacing: 0.5, fontWeight: '700' },
+  statsRow:  { flexDirection: 'row', marginBottom: 12 },
+  statCard:  { flex: 1, borderRadius: 16, padding: 12, alignItems: 'center', marginHorizontal: 3 },
+  statNum:   { fontSize: 24, fontWeight: '800', marginBottom: 2 },
+  statLabel: { fontSize: 7, letterSpacing: 0.5, fontWeight: '700' },
 
   occasionCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 14, marginBottom: 10, borderColor: '#EDE8DF', borderWidth: 1 },
   occRow:       { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
