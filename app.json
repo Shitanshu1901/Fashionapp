@@ -38,7 +38,8 @@
         }
       ],
       "expo-document-picker",
-      "expo-image-picker"
+      "expo-image-picker",
+      "expo-font"
     ],
     "extra": {
       "eas": {
