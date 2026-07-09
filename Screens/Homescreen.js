@@ -56,6 +56,14 @@ export default function Homescreen({ userName, userGender }) {
   const [editingItemId, setEditingItemId]   = useState(null);
   const [editingNotes, setEditingNotes]     = useState('');
 
+  // ── Re-tag modal ──────────────────────────────────────────────────
+  const [isRetagVisible, setIsRetagVisible]   = useState(false);
+  const [retagItemId, setRetagItemId]         = useState(null);
+  const [retagOpenGroup, setRetagOpenGroup]   = useState(null);
+  const [retagSubCat, setRetagSubCat]         = useState(null);
+  const [retagSlot, setRetagSlot]             = useState(null);
+  const [retagOccasions, setRetagOccasions]   = useState([]);
+
   // ── Weather ───────────────────────────────────────────────────────
   const [weather, setWeather]               = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
@@ -225,6 +233,39 @@ export default function Homescreen({ userName, userGender }) {
     const updated = await updateClothingItem(editingItemId, { notes: editingNotes });
     setWardrobe(updated || []);
     setIsNotesVisible(false); setEditingItemId(null); setEditingNotes('');
+  };
+
+  const handleOpenRetag = () => {
+    if (!itemToAction) return;
+    setRetagItemId(itemToAction.id);
+    // Pre-fill with existing values so user sees current state
+    setRetagSubCat(itemToAction.subCategory || null);
+    setRetagSlot(itemToAction.slot || null);
+    setRetagOpenGroup(null);
+    const existingOccs = itemToAction.occasions ||
+      (itemToAction.occasion ? [itemToAction.occasion] : []);
+    setRetagOccasions(existingOccs);
+    setIsActionVisible(false);
+    setIsRetagVisible(true);
+  };
+
+  const handleSaveRetag = async () => {
+    if (!retagItemId || !retagSubCat) return;
+    if (!retagOccasions.length) {
+      Alert.alert('Select Occasion', 'Pick at least one occasion for this item.');
+      return;
+    }
+    const updated = await updateClothingItem(retagItemId, {
+      subCategory: retagSubCat,
+      slot:        retagSlot,
+      occasions:   retagOccasions,
+    });
+    setWardrobe(updated || []);
+    try { await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+    setIsRetagVisible(false);
+    setRetagItemId(null); setRetagSubCat(null);
+    setRetagSlot(null); setRetagOpenGroup(null); setRetagOccasions([]);
+    Alert.alert('Re-tagged! ✓', 'This item will now appear in smarter outfit suggestions.');
   };
 
   const handleDeleteItem = async () => {
@@ -618,6 +659,21 @@ export default function Homescreen({ userName, userGender }) {
             {!!itemToAction?.notes && (
               <Text style={styles.actionNotes}>📝 "{itemToAction.notes}"</Text>
             )}
+            
+            {/* Re-tag option — shown for all items, highlighted for untagged */}
+            <TouchableOpacity
+              style={[
+                styles.actionOptionBtn,
+                !itemToAction?.subCategory && { backgroundColor: '#FFF9E6', borderColor: '#FFE082', borderWidth: 1 }
+              ]}
+              onPress={handleOpenRetag}
+            >
+              <Text style={styles.actionOptionText}>
+                🏷️ {itemToAction?.subCategory
+                  ? `Re-tag (${itemToAction.subCategory})`
+                  : 'Re-tag Item — needs updating'}
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionOptionBtn} onPress={handleOpenNotes}>
               <Text style={styles.actionOptionText}>
@@ -667,6 +723,133 @@ export default function Homescreen({ userName, userGender }) {
             </TouchableOpacity>
             <TouchableOpacity style={{ paddingVertical: 12 }}
               onPress={() => { setIsNotesVisible(false); setEditingNotes(''); }}>
+              <Text style={styles.dismissText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Re-tag modal ── */}
+      <Modal visible={isRetagVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContainer, { maxHeight: '92%' }]}>
+
+            <Text style={styles.modalTitle}>Re-tag Item</Text>
+            <Text style={[styles.colorPickerLabel, { marginBottom: 12 }]}>
+              PICK A NEW CATEGORY
+            </Text>
+
+            <ScrollView
+              style={{ width: '100%', maxHeight: 280 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {genderCats.map(group => {
+                const isOpen = retagOpenGroup === group.group;
+                return (
+                  <View key={group.group} style={{ marginBottom: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.groupHeader, isOpen && styles.groupHeaderOpen]}
+                      onPress={() => setRetagOpenGroup(isOpen ? null : group.group)}
+                    >
+                      <Text style={[styles.groupHeaderText, isOpen && { color: '#FAF6F0' }]}>
+                        {group.group}
+                      </Text>
+                      <Text style={{ color: isOpen ? '#FAF6F0' : '#8A7E72', fontSize: 14 }}>
+                        {isOpen ? '▲' : '▼'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {isOpen && (
+                      <View style={styles.groupItems}>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+                          {group.items.map(it => (
+                            <TouchableOpacity
+                              key={it.value}
+                              style={[
+                                styles.subCatChip,
+                                retagSubCat === it.value && styles.subCatChipActive,
+                              ]}
+                              onPress={() => {
+                                setRetagSubCat(it.value);
+                                setRetagSlot(group.slot);
+                              }}
+                            >
+                              <Text style={[
+                                styles.subCatChipText,
+                                retagSubCat === it.value && { color: '#FAF6F0' },
+                              ]}>
+                                {it.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+
+            {/* Occasion multi-select */}
+            {!!retagSubCat && (
+              <>
+                <Text style={[styles.colorPickerLabel, { marginTop: 14, marginBottom: 10 }]}>
+                  UPDATE OCCASIONS
+                </Text>
+                <View style={styles.occasionGrid}>
+                  {OCCASIONS.map(occ => (
+                    <TouchableOpacity
+                      key={occ}
+                      style={[
+                        styles.occChip,
+                        retagOccasions.includes(occ) && styles.occChipActive,
+                      ]}
+                      onPress={() =>
+                        setRetagOccasions(prev =>
+                          prev.includes(occ)
+                            ? prev.filter(o => o !== occ)
+                            : [...prev, occ]
+                        )
+                      }
+                    >
+                      <Text style={styles.occChipEmoji}>{OCC_ICONS[occ]}</Text>
+                      <Text style={[
+                        styles.occChipText,
+                        retagOccasions.includes(occ) && { color: '#FAF6F0' },
+                      ]}>
+                        {occ}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={[
+                styles.modalNextBtn,
+                (!retagSubCat || !retagOccasions.length) && styles.modalNextBtnDisabled,
+              ]}
+              onPress={handleSaveRetag}
+              disabled={!retagSubCat || !retagOccasions.length}
+            >
+              <Text style={styles.modalNextBtnText}>
+                {!retagSubCat
+                  ? 'Select a category above'
+                  : !retagOccasions.length
+                  ? 'Select at least one occasion'
+                  : '✓ Save Re-tag'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ paddingVertical: 12 }}
+              onPress={() => {
+                setIsRetagVisible(false);
+                setRetagItemId(null); setRetagSubCat(null);
+                setRetagSlot(null); setRetagOpenGroup(null); setRetagOccasions([]);
+              }}
+            >
               <Text style={styles.dismissText}>Cancel</Text>
             </TouchableOpacity>
           </View>
