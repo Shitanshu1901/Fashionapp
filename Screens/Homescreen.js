@@ -14,7 +14,7 @@ import {
   updateClothingItem, runMigrationIfNeeded, COOLDOWN_DAYS,
 } from '../utils/storage';
 import {
-  buildSmartOutfit, UPLOAD_CATEGORIES, OUTFIT_SLOTS, ITEM_COLORS,
+  buildSmartOutfit, UPLOAD_CATEGORIES, ITEM_COLORS,
 } from '../utils/StyleRules';
 import { WEATHER_API_KEY } from '../config';
 
@@ -250,23 +250,24 @@ export default function Homescreen({ userName, userGender }) {
   };
 
   const handleSaveRetag = async () => {
-    if (!retagItemId || !retagSubCat) return;
-    if (!retagOccasions.length) {
-      Alert.alert('Select Occasion', 'Pick at least one occasion for this item.');
-      return;
-    }
-    const updated = await updateClothingItem(retagItemId, {
-      subCategory: retagSubCat,
-      slot:        retagSlot,
-      occasions:   retagOccasions,
-    });
-    setWardrobe(updated || []);
-    try { await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
-    setIsRetagVisible(false);
-    setRetagItemId(null); setRetagSubCat(null);
-    setRetagSlot(null); setRetagOpenGroup(null); setRetagOccasions([]);
-    Alert.alert('Re-tagged! ✓', 'This item will now appear in smarter outfit suggestions.');
-  };
+  if (!retagItemId || !retagSubCat) return;
+  if (!retagOccasions.length) {
+    Alert.alert('Select Occasion', 'Pick at least one occasion for this item.');
+    return;
+  }
+  const updated = await updateClothingItem(retagItemId, {
+    subCategory: retagSubCat,
+    slot:        retagSlot,
+    occasions:   retagOccasions,
+  });
+  setWardrobe(updated || []);
+  try { await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch (_) {}
+  setIsRetagVisible(false);
+  setItemToAction(null);
+  setRetagItemId(null); setRetagSubCat(null);
+  setRetagSlot(null); setRetagOpenGroup(null); setRetagOccasions([]);
+  Alert.alert('Re-tagged! ✓', 'This item will now appear in smarter outfit suggestions.');
+};
 
   const handleDeleteItem = async () => {
     if (!itemToAction) return;
